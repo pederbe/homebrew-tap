@@ -1,0 +1,46 @@
+name: Formula
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  formula:
+    name: Build, test and remove on ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, macos-26, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: "1"
+      HOMEBREW_NO_INSTALL_FROM_API: "1"
+    steps:
+      # Taps this checkout as pederbe/tap.
+      - uses: Homebrew/actions/setup-homebrew@fccef3b26268fc4a788fd7ad7c189f3a105cbf13 # main
+      - name: Environment
+        run: |
+          brew --version
+          sw_vers 2>/dev/null || cat /etc/os-release
+          uname -m
+      - name: Style and audit
+        run: |
+          brew style pederbe/tap/fastmash
+          brew audit --strict pederbe/tap/fastmash
+      - name: Build from source
+        run: brew install --build-from-source --verbose pederbe/tap/fastmash
+      - name: Test
+        run: brew test --verbose pederbe/tap/fastmash
+      - name: Remove
+        run: |
+          prefix=$(brew --prefix)
+          cellar=$(brew --cellar fastmash)
+          brew uninstall pederbe/tap/fastmash
+          test ! -e "$prefix/bin/fastmash"
+          test ! -e "$prefix/bin/fastmash-sort-supervisor"
+          test ! -e "$cellar"
