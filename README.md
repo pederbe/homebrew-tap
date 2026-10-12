@@ -7,10 +7,12 @@ and table transformations, on Linux x86-64 or Apple Silicon macOS 15 and later:
 brew install pederbe/tap/fastmash
 ```
 
-Homebrew builds the published source with its locked Rust dependencies.
+Homebrew installs a prebuilt bottle when one is published for your platform,
+without needing Rust or Python. Otherwise it builds the published source with
+its locked Rust dependencies. Use `--build-from-source` to request a source build.
 The formula installs `fastmash`, both project licenses, and the dependency
 licenses and notices. Linux installations also include `fastmash-sort-supervisor`.
-Rust and Python are build dependencies. These source builds do not carry the
+Rust and Python are build dependencies. Homebrew builds do not carry the
 performance qualification of the project's downloadable binaries.
 
 To check or remove the installation:
@@ -28,20 +30,7 @@ confirms that no Sort supervisor is installed.
 Report formula problems in this repository. Report program problems in
 the [Fastmash issue tracker](https://github.com/pederbe/fastmash/issues).
 
-## Maintaining the formula
-
-When updating `Formula/fastmash.rb`, use a published source tag and its
-SHA-256 hash. Check the source build, installed tests, audit and style:
-
-```sh
-brew reinstall --build-from-source pederbe/tap/fastmash
-brew test pederbe/tap/fastmash
-brew audit --strict pederbe/tap/fastmash
-brew style pederbe/tap/fastmash
-```
-
-Verify that the installed executable links and the package's Cellar directory are
-removed after `brew uninstall`.
+See [the maintenance guide](CONTRIBUTING.md) for source checks and bottle publication.
 
 The formula and documentation are available under either the MIT or
 Apache-2.0 license. Fastmash and its dependencies retain their own licenses.

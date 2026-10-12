@@ -8,39 +8,51 @@ on:
 
 permissions:
   contents: read
+  actions: read
+  checks: read
+  pull-requests: read
+
+defaults:
+  run:
+    shell: bash -xeuo pipefail {0}
 
 jobs:
   formula:
-    name: Build, test and remove on ${{ matrix.os }}
+    name: Build and test bottles on ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [macos-15, macos-26, ubuntu-24.04]
     runs-on: ${{ matrix.os }}
-    env:
-      HOMEBREW_NO_AUTO_UPDATE: "1"
-      HOMEBREW_NO_INSTALL_FROM_API: "1"
     steps:
       # Taps this checkout as pederbe/tap.
-      - uses: Homebrew/actions/setup-homebrew@fccef3b26268fc4a788fd7ad7c189f3a105cbf13 # main
+      - uses: Homebrew/actions/setup-homebrew@e99025eb970cfa124b8284a35463d87426917478 # 2026.09.28.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Environment
         run: |
           brew --version
           sw_vers 2>/dev/null || cat /etc/os-release
           uname -m
-      - name: Style and audit
+      - run: brew test-bot --only-cleanup-before
+      - run: brew test-bot --only-setup
+      - run: brew test-bot --only-tap-syntax
+      - name: Build, bottle and test changed formulae
+        if: github.event_name == 'pull_request'
+        run: brew test-bot --only-formulae
+      - name: Retain bottles and checksums
+        if: success() && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: bottles_${{ matrix.os }}
+          path: '*.bottle.*'
+          retention-days: 14
+      - name: Remove installations
+        if: always()
         run: |
-          brew style pederbe/tap/fastmash
-          brew audit --strict pederbe/tap/fastmash
-      - name: Build from source
-        run: brew install --build-from-source --verbose pederbe/tap/fastmash
-      - name: Test
-        run: brew test --verbose pederbe/tap/fastmash
-      - name: Remove
-        run: |
+          brew test-bot --only-cleanup-after
           prefix=$(brew --prefix)
           cellar=$(brew --cellar fastmash)
-          brew uninstall pederbe/tap/fastmash
           test ! -e "$prefix/bin/fastmash"
           test ! -e "$prefix/bin/fastmash-sort-supervisor"
           test ! -e "$cellar"
