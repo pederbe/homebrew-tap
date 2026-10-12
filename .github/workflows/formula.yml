@@ -50,9 +50,11 @@ jobs:
       - name: Remove installations
         if: always()
         run: |
-          brew test-bot --only-cleanup-after
           prefix=$(brew --prefix)
           cellar=$(brew --cellar fastmash)
+          if [[ -d "$cellar" ]]; then
+            brew uninstall --force pederbe/tap/fastmash
+          fi
           test ! -e "$prefix/bin/fastmash"
           test ! -e "$prefix/bin/fastmash-sort-supervisor"
           test ! -e "$cellar"
