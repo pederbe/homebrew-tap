@@ -2,7 +2,6 @@ class Fastmash < Formula
   desc "Fast command-line statistics and table transformations"
   homepage "https://fastmash.io"
   url "https://github.com/pederbe/fastmash/archive/refs/tags/v0.2.0.tar.gz"
-  version "0.2.0"
   sha256 "e331d2d9499dc502f16e253ab4c408ceed4cca251420c53718ea8f70595e0302"
   license any_of: ["MIT", "Apache-2.0"]
 
