@@ -7,17 +7,19 @@ and table transformations, on Linux x86-64 or Apple Silicon macOS 15 and later:
 brew install pederbe/tap/fastmash
 ```
 
-Homebrew installs a prebuilt bottle when one is published for your platform,
-without needing Rust or Python. Otherwise it builds the published source with
-its locked Rust dependencies. Use `--build-from-source` to request a source build.
+Homebrew installs a prebuilt bottle on macOS 15, macOS 26 and Linux x86-64,
+without needing Rust. Otherwise it builds the published source with its locked
+Rust dependencies. Use `--build-from-source` to request a source build.
 The formula installs `fastmash`, both project licenses, and the dependency
 licenses and notices. Linux installations also include `fastmash-sort-supervisor`.
-Rust and Python are build dependencies. Homebrew builds do not carry the
+Rust is a build dependency only. Homebrew builds do not carry the
 performance qualification of the project's downloadable binaries.
 
-To check or remove the installation:
+New Fastmash releases usually reach this tap within a day. To update, check or
+remove the installation:
 
 ```sh
+brew upgrade fastmash
 brew test pederbe/tap/fastmash
 brew uninstall pederbe/tap/fastmash
 ```

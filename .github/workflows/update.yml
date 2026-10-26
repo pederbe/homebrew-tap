@@ -1,0 +1,192 @@
+name: Update
+
+# Runs daily and on manual dispatch. When the latest Fastmash release is newer
+# than the formula, it builds and tests bottles, publishes them, then checks an
+# upgrade from the previous bottles. Otherwise it stops after the version check.
+# A failed run leaves main unchanged. Rerun its failed jobs, or let the next
+# daily run start again.
+on:
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+    inputs:
+      recipe_ref:
+        description: Fastmash ref to take the recipe from, if not the release tag
+        required: false
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash -xeuo pipefail {0}
+
+concurrency:
+  group: publish-bottles
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: Compare with the latest release
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.release.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Prepare the formula for a newer release
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RECIPE_REF: ${{ inputs.recipe_ref }}
+        run: |
+          tag=$(gh api repos/pederbe/fastmash/releases/latest --jq .tag_name)
+          [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          version=${tag#v}
+          current=$(sed -n 's|^  url "https://github.com/pederbe/fastmash/archive/refs/tags/v\(.*\)\.tar\.gz"$|\1|p' Formula/fastmash.rb)
+          test -n "$current"
+          if [[ "$current" == "$version" ]]; then
+            echo "The tap already has Fastmash $version." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          if [[ "$(printf '%s\n' "$current" "$version" | sort -V | tail -1)" != "$version" ]]; then
+            echo "::error::The latest release, $version, is older than the formula's $current."
+            exit 1
+          fi
+          url=https://github.com/pederbe/fastmash/archive/refs/tags/$tag.tar.gz
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/source.tar.gz" "$url"
+          digest=$(sha256sum "$RUNNER_TEMP/source.tar.gz" | cut -d' ' -f1)
+          mkdir "$RUNNER_TEMP/formula"
+          formula=$RUNNER_TEMP/formula/fastmash.rb
+          gh api -H 'Accept: application/vnd.github.raw' \
+            "repos/pederbe/fastmash/contents/packaging/homebrew/fastmash.rb?ref=${RECIPE_REF:-$tag}" > "$formula"
+          sed -i -e "s|^  url \".*\"$|  url \"$url\"|" -e "s|^  sha256 \".*\"$|  sha256 \"$digest\"|" "$formula"
+          grep -qxF "  url \"$url\"" "$formula"
+          test "$(grep -c '^  sha256 ' "$formula")" = 1
+          grep -qxF "  sha256 \"$digest\"" "$formula"
+          diff -u Formula/fastmash.rb "$formula" || true
+          echo "Updating Fastmash from $current to $version." >> "$GITHUB_STEP_SUMMARY"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: steps.release.outputs.version
+        with:
+          name: formula
+          path: ${{ runner.temp }}/formula/fastmash.rb
+          retention-days: 14
+
+  bottles:
+    needs: check
+    if: needs.check.outputs.version
+    uses: ./.github/workflows/formula.yml
+    permissions:
+      contents: read
+      actions: read
+      checks: read
+      pull-requests: read
+    with:
+      formula-artifact: formula
+
+  publish:
+    name: Publish bottles and formula
+    needs: [check, bottles]
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    permissions:
+      attestations: write
+      contents: write
+      id-token: write
+    env:
+      VERSION: ${{ needs.check.outputs.version }}
+    steps:
+      - name: Set up Homebrew
+        uses: Homebrew/actions/setup-homebrew@e99025eb970cfa124b8284a35463d87426917478 # 2026.09.28.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set up Git identity
+        id: git_setup
+        uses: Homebrew/actions/git-user-config@e99025eb970cfa124b8284a35463d87426917478 # 2026.09.28.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: formula
+          path: Formula
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: bottles_*
+          merge-multiple: true
+          path: ${{ runner.temp }}/bottles
+      - name: Commit the formula and upload its bottles
+        id: upload
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HOMEBREW_GITHUB_API_TOKEN: ${{ github.token }}
+          HOMEBREW_GIT_COMMITTER_NAME: ${{ steps.git_setup.outputs.name }}
+          HOMEBREW_GIT_COMMITTER_EMAIL: ${{ steps.git_setup.outputs.email }}
+        run: |
+          git fetch origin main
+          if git show origin/main:Formula/fastmash.rb | grep -qF "/v$VERSION.tar.gz"; then
+            echo "::error::main already has Fastmash $VERSION."
+            exit 1
+          fi
+          # Nothing on main refers to this release yet, so a retry can replace a partial upload.
+          release=fastmash-$VERSION
+          if gh release view "$release" --repo "$GITHUB_REPOSITORY" > /dev/null; then
+            gh release delete "$release" --repo "$GITHUB_REPOSITORY" --cleanup-tag --yes
+          fi
+          git commit -m "fastmash $VERSION" Formula/fastmash.rb
+          cd "$RUNNER_TEMP/bottles"
+          brew pr-upload --debug --root-url="https://github.com/$GITHUB_REPOSITORY/releases/download/$release"
+          echo "bottle_path=$PWD" >> "$GITHUB_OUTPUT"
+      - name: Attest published bottles
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: "${{ steps.upload.outputs.bottle_path }}/*.tar.gz"
+      - name: Push formula and bottle checksums
+        uses: Homebrew/actions/git-try-push@e99025eb970cfa124b8284a35463d87426917478 # 2026.09.28.1
+        with:
+          branch: main
+
+  verify:
+    name: Upgrade from the previous bottle on ${{ matrix.os }}
+    needs: [check, publish]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, macos-26, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: '1'
+      VERSION: ${{ needs.check.outputs.version }}
+    steps:
+      # Taps the checkout this run started from, which has the previous formula.
+      - uses: Homebrew/actions/setup-homebrew@e99025eb970cfa124b8284a35463d87426917478 # 2026.09.28.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install the previous bottle and upgrade to the published one
+        run: |
+          tap=$(brew --repository pederbe/tap)
+          brew install --force-bottle pederbe/tap/fastmash
+          test "$(brew list --versions fastmash)" != "fastmash $VERSION"
+          git -C "$tap" fetch origin main
+          git -C "$tap" checkout --force --detach FETCH_HEAD
+          grep -qF "/v$VERSION.tar.gz" "$tap/Formula/fastmash.rb"
+          brew upgrade --force-bottle pederbe/tap/fastmash
+          test "$(brew list --versions fastmash)" = "fastmash $VERSION"
+          test "$("$(brew --prefix)/bin/fastmash" --version)" = "fastmash $VERSION"
+          brew test pederbe/tap/fastmash
+      - name: Remove installations
+        if: always()
+        run: |
+          prefix=$(brew --prefix)
+          cellar=$(brew --cellar fastmash)
+          if [[ -d "$cellar" ]]; then
+            brew uninstall --force pederbe/tap/fastmash
+          fi
+          test ! -e "$prefix/bin/fastmash"
+          test ! -e "$prefix/bin/fastmash-sort-supervisor"
+          test ! -e "$cellar"
