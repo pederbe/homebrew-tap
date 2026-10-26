@@ -176,6 +176,8 @@ jobs:
           git -C "$tap" checkout --force --detach FETCH_HEAD
           grep -qF "/v$VERSION.tar.gz" "$tap/Formula/fastmash.rb"
           brew upgrade --force-bottle pederbe/tap/fastmash
+          # macOS keeps the previous keg until cleanup.
+          brew cleanup fastmash
           test "$(brew list --versions fastmash)" = "fastmash $VERSION"
           test "$("$(brew --prefix)/bin/fastmash" --version)" = "fastmash $VERSION"
           brew test pederbe/tap/fastmash
