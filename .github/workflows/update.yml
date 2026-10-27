@@ -3,8 +3,8 @@ name: Update
 # Runs daily and on manual dispatch. When the latest Fastmash release is newer
 # than the formula, it builds and tests bottles, publishes them, then checks an
 # upgrade from the previous bottles. Otherwise it stops after the version check.
-# A failed run leaves main unchanged. Rerun its failed jobs, or let the next
-# daily run start again.
+# A failed bottle build leaves main unchanged. Rerun failed jobs to resume.
+# Use verify_from after publication if the verification workflow needs a fix.
 on:
   schedule:
     - cron: '17 6 * * *'
