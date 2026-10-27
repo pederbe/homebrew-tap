@@ -13,6 +13,9 @@ on:
       recipe_ref:
         description: Fastmash ref to take the recipe from, if not the release tag
         required: false
+      verify_from:
+        description: Verify published bottles only, upgrading from this previous tap commit SHA
+        required: false
 
 permissions: {}
 
@@ -33,6 +36,7 @@ jobs:
       contents: read
     outputs:
       version: ${{ steps.release.outputs.version }}
+      verify_version: ${{ steps.release.outputs.verify_version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -42,12 +46,21 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RECIPE_REF: ${{ inputs.recipe_ref }}
+          VERIFY_FROM: ${{ inputs.verify_from }}
         run: |
           tag=$(gh api repos/pederbe/fastmash/releases/latest --jq .tag_name)
           [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
           version=${tag#v}
           current=$(sed -n 's|^  url "https://github.com/pederbe/fastmash/archive/refs/tags/v\(.*\)\.tar\.gz"$|\1|p' Formula/fastmash.rb)
           test -n "$current"
+          if [[ -n "$VERIFY_FROM" ]]; then
+            [[ "$VERIFY_FROM" =~ ^[0-9a-f]{40}$ ]]
+            test -z "$RECIPE_REF"
+            test "$current" = "$version"
+            echo "verify_version=$version" >> "$GITHUB_OUTPUT"
+            echo "Checking the published $version bottles without building or publishing." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
           if [[ "$current" == "$version" ]]; then
             echo "The tap already has Fastmash $version." >> "$GITHUB_STEP_SUMMARY"
             exit 0
@@ -151,6 +164,9 @@ jobs:
   verify:
     name: Upgrade from the previous bottle on ${{ matrix.os }}
     needs: [check, publish]
+    if: >-
+      !cancelled() && needs.check.result == 'success' &&
+      (needs.publish.result == 'success' || needs.check.outputs.verify_version != '')
     strategy:
       fail-fast: false
       matrix:
@@ -161,7 +177,8 @@ jobs:
       contents: read
     env:
       HOMEBREW_NO_AUTO_UPDATE: '1'
-      VERSION: ${{ needs.check.outputs.version }}
+      VERSION: ${{ needs.check.outputs.verify_version || needs.check.outputs.version }}
+      VERIFY_FROM: ${{ inputs.verify_from }}
     steps:
       # Taps the checkout this run started from, which has the previous formula.
       - uses: Homebrew/actions/setup-homebrew@e99025eb970cfa124b8284a35463d87426917478 # 2026.09.28.1
@@ -170,6 +187,10 @@ jobs:
       - name: Install the previous bottle and upgrade to the published one
         run: |
           tap=$(brew --repository pederbe/tap)
+          if [[ -n "$VERIFY_FROM" ]]; then
+            git -C "$tap" fetch origin "$VERIFY_FROM"
+            git -C "$tap" checkout --force --detach FETCH_HEAD
+          fi
           brew install --force-bottle pederbe/tap/fastmash
           test "$(brew list --versions fastmash)" != "fastmash $VERSION"
           git -C "$tap" fetch origin main

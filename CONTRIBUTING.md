@@ -33,6 +33,14 @@ partial upload, since `main` does not refer to it yet. If the problem is in a
 release's recipe, fix the recipe on Fastmash's `main` and dispatch `Update` with
 `recipe_ref` set to `main`. Otherwise the next daily run starts again.
 
+If publication succeeded but the final installation check needs a workflow fix,
+merge the fix and dispatch `Update` with `verify_from` set to the full tap commit
+SHA that still contains the previous version. Leave `recipe_ref` empty. This
+installs the previous bottles, upgrades to the current published bottles and
+checks removal on all three platforms, without rebuilding or publishing anything.
+For the 0.2.0 to 0.3.0 upgrade, the previous tap commit is
+`ac96fe433ae71717b68c26d1fcef4afe68eaa774`.
+
 GitHub pauses scheduled workflows after 60 days without repository activity
 and emails the owner first. Renovate's merges usually keep the tap active. If
 `Update` is paused, enable it again in the Actions tab and dispatch it once.
