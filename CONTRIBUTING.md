@@ -1,11 +1,26 @@
-# Maintaining the formula
+# Maintaining the tap
+
+## Esdieff release updates
+
+Esdieff supplies a binary formula with each GitHub release. The `Update Esdieff`
+workflow checks for releases daily at 06:23 UTC and on manual dispatch. It verifies
+the published archive checksums, checks installation, upgrade and removal on
+macOS and Linux, then commits the tested formula. It uses the repository's
+built-in token.
+
+Change the recipe generator in [Esdieff](https://github.com/pederbe/esdieff)
+when the formula needs a repair. Rerun `Update Esdieff` after a failed delivery.
+The [Esdieff installation guide](https://esdieff.com/docs/getting-started/)
+covers installation and updates.
+
+## Fastmash formula
 
 The Fastmash repository keeps the recipe in
 [`packaging/homebrew/fastmash.rb`](https://github.com/pederbe/fastmash/tree/main/packaging/homebrew).
 Change the recipe there first. This tap publishes that recipe with each
 release's source URL, checksum and bottles.
 
-## Automatic release updates
+### Automatic release updates
 
 The `Update` workflow runs daily at 06:17 UTC on GitHub-hosted runners, and on
 manual dispatch. It compares `Formula/fastmash.rb` with the latest published
@@ -45,7 +60,7 @@ GitHub pauses scheduled workflows after 60 days without repository activity
 and emails the owner first. Renovate's merges usually keep the tap active. If
 `Update` is paused, enable it again in the Actions tab and dispatch it once.
 
-## Manual formula changes
+### Manual formula changes
 
 For a change that is not a new release, such as a revision, open a pull request
 here. Use a published source tag and its SHA-256 hash. Check the source build,

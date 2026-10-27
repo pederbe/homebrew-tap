@@ -1,5 +1,7 @@
 # Peder Bergan's Homebrew tap
 
+## Fastmash
+
 Install [Fastmash](https://fastmash.io), a command-line tool for statistics
 and table transformations, on Linux x86-64 or Apple Silicon macOS 15 and later:
 
@@ -34,5 +36,20 @@ the [Fastmash issue tracker](https://github.com/pederbe/fastmash/issues).
 
 See [the maintenance guide](CONTRIBUTING.md) for source checks and bottle publication.
 
-The formula and documentation are available under either the MIT or
-Apache-2.0 license. Fastmash and its dependencies retain their own licenses.
+## Esdieff
+
+Install [Esdieff](https://esdieff.com), a toolkit for understanding, checking and
+testing SDF device models, on macOS 15+ or Linux:
+
+```sh
+brew install pederbe/tap/esdieff
+```
+
+The formula installs the prebuilt release and its licenses. New releases usually
+reach this tap within a day. Update with `brew upgrade esdieff`, check it with
+`brew test pederbe/tap/esdieff`, and remove it with `brew uninstall esdieff`.
+
+Report program problems in the [Esdieff issue tracker](https://github.com/pederbe/esdieff/issues).
+
+The formulae and documentation are available under either the MIT or
+Apache-2.0 license. Both programs and their dependencies retain their own licenses.
