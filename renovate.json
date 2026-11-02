@@ -7,7 +7,8 @@
     "cargo",
     "npm",
     "github-actions",
-    "dockerfile"
+    "dockerfile",
+    "custom.regex"
   ],
   "ignorePaths": [
     "**/target/**",
@@ -32,6 +33,25 @@
       "groupName": "daily dependencies",
       "groupSlug": "daily-dependencies",
       "separateMajorMinor": false
+    },
+    {
+      "description": "The regex manager preserves Homebrew's four-part release comments, which the GitHub Actions manager truncates.",
+      "matchManagers": ["github-actions"],
+      "matchPackageNames": ["Homebrew/actions"],
+      "matchCurrentValue": "/^\\d{4}\\./",
+      "enabled": false
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^\\.github\\/workflows\\/[^/]+\\.ya?ml$/"],
+      "matchStrings": [
+        "Homebrew/actions/[\\w-]+@(?<currentDigest>[a-f0-9]{40})[ \\t]+#[ \\t]+(?<currentValue>\\d{4}\\.\\d{2}\\.\\d{2}\\.\\d+)"
+      ],
+      "depNameTemplate": "Homebrew/actions",
+      "datasourceTemplate": "github-tags",
+      "versioningTemplate": "loose"
     }
   ],
   "lockFileMaintenance": {
