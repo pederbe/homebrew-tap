@@ -1,15 +1,13 @@
 class Esdieff < Formula
   desc "SDF toolkit for connected-device models"
   homepage "https://esdieff.com"
+  url "https://github.com/pederbe/esdieff/releases/download/v0.2.0/esdieff-aarch64-apple-darwin.tar.xz"
+  sha256 "c888799104974f8beb42004ebd3099011dcf66c035b6aca47dda2ae5a370b30d"
   license any_of: ["MIT", "Apache-2.0"]
 
   on_macos do
     depends_on arch: :arm64
     depends_on macos: :sequoia
-    on_arm do
-      url "https://github.com/pederbe/esdieff/releases/download/v0.2.0/esdieff-aarch64-apple-darwin.tar.xz"
-      sha256 "c888799104974f8beb42004ebd3099011dcf66c035b6aca47dda2ae5a370b30d"
-    end
   end
 
   on_linux do
