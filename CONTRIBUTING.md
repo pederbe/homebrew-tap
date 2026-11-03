@@ -1,98 +1,46 @@
-# Maintaining the tap
+# Maintaining Homebrew installations
 
-## Esdieff release updates
+This repository tells Homebrew how to install the published Esdieff and
+Fastmash release files. Both programs use the same executables tested by their
+release pipelines. This repository does not rebuild them or publish another
+set of release files.
 
-Esdieff supplies a binary formula with each GitHub release. The `Update Esdieff`
-workflow checks for releases daily at 06:23 UTC and on manual dispatch. It verifies
-the published archive checksums, checks installation, upgrade and removal on
-macOS and Linux, then commits the tested formula. It uses the repository's
-built-in token.
+## Automatic updates
 
-Change the recipe generator in [Esdieff](https://github.com/pederbe/esdieff)
-when the formula needs a repair. Rerun `Update Esdieff` after a failed delivery.
-The [Esdieff installation guide](https://esdieff.com/docs/getting-started/)
-covers installation and updates.
+The `Update` workflow checks Fastmash releases daily at 06:17 UTC. `Update
+Esdieff` checks Esdieff releases at 06:23 UTC. Both also support manual dispatch.
+They use the repository's built-in token.
 
-## Fastmash formula
+Fastmash's updater reads its maintained installation recipe from
+[`packaging/homebrew/fastmash.rb`](https://github.com/pederbe/fastmash/blob/main/packaging/homebrew/fastmash.rb),
+then selects the latest published archives and their SHA-256 hashes. Esdieff
+supplies a complete recipe with each release.
 
-The Fastmash repository keeps the recipe in
-[`packaging/homebrew/fastmash.rb`](https://github.com/pederbe/fastmash/tree/main/packaging/homebrew).
-Change the recipe there first. This tap publishes that recipe with each
-release's source URL, checksum and bottles.
+The workflows check installation, upgrade and removal before updating the
+recipe on `main`. Fastmash also compares the installed executable with the
+release archive. Application correctness is established by the original
+release tests rather than another build here. A failure leaves the previous
+recipe in place. Retry the workflow after repairing the cause. The program's
+release and its other installation channels remain available.
 
-### Automatic release updates
+Fastmash's `check_only` input runs preparation and installation checks without
+changing `main`. Its optional `recipe_ref` input selects a Fastmash ref instead
+of the default `main` recipe. A new version resets the recipe revision to zero.
+The 0.4.0 recipe uses revision 1 so existing users migrate from the previous
+Homebrew-built package through `brew upgrade`.
 
-The `Update` workflow runs daily at 06:17 UTC on GitHub-hosted runners, and on
-manual dispatch. It compares `Formula/fastmash.rb` with the latest published
-Fastmash release:
+## Recipe changes
 
-1. When the versions match, it stops after this check.
-2. For a newer release, it takes the recipe from the release tag and sets the
-   tag's source URL and SHA-256 hash.
-3. It calls the `Formula` workflow, which builds and tests bottles on Apple
-   Silicon macOS 15 and 26 and Linux x86-64 with Homebrew's `test-bot`.
-4. It commits the formula, uploads the bottles to this tap's GitHub Releases
-   with `brew pr-upload`, attests them and pushes the formula and bottle
-   checksums to `main`.
-5. On each platform, it installs the previous bottle, upgrades to the new
-   one, runs `brew test` and checks removal.
+Change Fastmash's recipe and shared installation check in its own repository
+first. Change Esdieff's recipe generator in its own repository. Submit the
+resulting recipe changes here through a pull request. The `Formula` workflow
+checks style, supported platform loading and installation on macOS 15, macOS
+26 and Linux. It checks upgrades when the Fastmash recipe changes.
 
-`main` changes only in step 4, after every bottle passes. The run uses the
-repository's built-in token and needs no other credentials. Fastmash releases
-do not wait for this workflow, so a tap failure leaves the release and its
-other packages unaffected.
-
-When a run fails, open it in the Actions tab and choose **Re-run failed jobs**.
-This reuses the bottles that already passed. A retry of step 4 replaces any
-partial upload, since `main` does not refer to it yet. If the problem is in a
-release's recipe, fix the recipe on Fastmash's `main` and dispatch `Update` with
-`recipe_ref` set to `main`. Otherwise the next daily run starts again.
-
-If publication succeeded but the final installation check needs a workflow fix,
-merge the fix and dispatch `Update` with `verify_from` set to the full tap commit
-SHA that still contains the previous version. Leave `recipe_ref` empty. This
-installs the previous bottles, upgrades to the current published bottles and
-checks removal on all three platforms, without rebuilding or publishing anything.
-For the 0.2.0 to 0.3.0 upgrade, the previous tap commit is
-`ac96fe433ae71717b68c26d1fcef4afe68eaa774`.
+Ordinary pull request merging completes the update. No separate package
+publication workflow or release credentials are needed. Keep historical
+package releases available for users who have not upgraded yet.
 
 GitHub pauses scheduled workflows after 60 days without repository activity
-and emails the owner first. Renovate's merges usually keep the tap active. If
-`Update` is paused, enable it again in the Actions tab and dispatch it once.
-
-### Manual formula changes
-
-For a change that is not a new release, such as a revision, open a pull request
-here. Use a published source tag and its SHA-256 hash. Check the source build,
-installed tests, audit and style locally:
-
-```sh
-brew reinstall --build-from-source pederbe/tap/fastmash
-brew test pederbe/tap/fastmash
-brew audit --strict pederbe/tap/fastmash
-brew style pederbe/tap/fastmash
-```
-
-Verify that the installed executable links and the package's Cellar directory are
-removed after `brew uninstall`.
-
-Formula pull requests build bottles on Apple Silicon macOS 15 and 26 and Linux
-x86-64. Homebrew's `test-bot` checks source builds, bottles, installed tests and
-linkage. The workflow retains bottle archives and checksum metadata for 14 days
-and checks that installations are removed afterwards. These are Homebrew source
-builds, separate from Fastmash's qualified release archives.
-
-Once the formula pull request passes, publish it with Homebrew's `pr-pull`.
-The manually dispatched `Publish bottles` workflow takes the pull request number
-and its full head commit SHA. It checks that exact revision, publishes the tested
-bottles to this tap's GitHub Releases, attests them, and pushes the formula and
-its generated bottle checksums to `main`. This replaces ordinary merging for a
-formula pull request.
-
-After publication, verify an installation from the tap with
-`brew install --force-bottle pederbe/tap/fastmash`, run `brew test`, and check removal.
-Public repositories use GitHub's free standard runners.
-
-See Homebrew's [bottle documentation](https://docs.brew.sh/Bottles) and
-[`tap-new` templates](https://github.com/Homebrew/brew/tree/main/.github/workflows)
-for the supported workflow.
+and emails the owner first. If an updater is paused, enable it in the Actions
+tab and dispatch it once.
