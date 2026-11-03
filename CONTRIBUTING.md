@@ -40,6 +40,7 @@ checks style, supported platform loading and installation on macOS 15, macOS
 Ordinary pull request merging completes the update. No separate package
 publication workflow or release credentials are needed. Keep historical
 package releases available for users who have not upgraded yet.
+Merging an already checked change does not start another installation check.
 
 GitHub pauses scheduled workflows after 60 days without repository activity
 and emails the owner first. If an updater is paused, enable it in the Actions
