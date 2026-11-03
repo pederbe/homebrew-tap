@@ -24,12 +24,23 @@ defaults:
     shell: bash -xeuo pipefail {0}
 
 jobs:
+  ci:
+    name: CI
+    needs: [formula]
+    if: always()
+    runs-on: ubuntu-26.04
+    steps:
+      - name: Require passing formula checks
+        env:
+          RESULT: ${{ needs.formula.result }}
+        run: test "$RESULT" = success
+
   formula:
     name: Build and test bottles on ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-15, macos-26, ubuntu-24.04]
+        os: [macos-15, macos-26, ubuntu-26.04]
     runs-on: ${{ matrix.os }}
     steps:
       # Taps this checkout as pederbe/tap.
