@@ -67,7 +67,7 @@ jobs:
         run: |
           brew style pederbe/tap
           brew readall --aliases --os=all --arch=all pederbe/tap
-          brew audit --except=installed pederbe/tap
+          brew audit --except=installed --tap=pederbe/tap
           packages=fastmash
           if [[ -n "$BASE" ]]; then
             packages=$(git diff --name-only "$BASE" HEAD -- 'Formula/*.rb' | sed -n 's@^Formula/\(.*\)\.rb$@\1@p')
