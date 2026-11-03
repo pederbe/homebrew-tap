@@ -5,6 +5,13 @@ class Fastmash < Formula
   sha256 "e4428c19785a5de60d2788769a4c7a99d6b61cbe9927899bb7b34495ab0a28b4"
   license any_of: ["MIT", "Apache-2.0"]
 
+  bottle do
+    root_url "https://github.com/pederbe/homebrew-tap/releases/download/fastmash-0.4.0"
+    sha256 cellar: :any_skip_relocation, arm64_tahoe:   "59313d7d675dd065c0fcee4f8eda275d91fe62d86d666f6051458d030116c03d"
+    sha256 cellar: :any_skip_relocation, arm64_sequoia: "103060a0f14f7436455ebc639cdf23b61a8a398c4f4a9e14ee01a0231c0886db"
+    sha256 cellar: :any,                 x86_64_linux:  "0c4fc37cef1cf705d66fdcdc690d406b40880ce283fe0616df262fc276824b29"
+  end
+
   depends_on "rust" => :build
 
   on_macos do
