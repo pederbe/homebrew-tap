@@ -42,7 +42,7 @@ jobs:
           version=${tag#v}
           previous=
           if [[ -f Formula/udpstp.rb ]]; then
-            previous=$(sed -n 's/^  version "\([0-9.]*\)"/\1/p' Formula/udpstp.rb)
+            previous=$(sed -n -e 's/^  version "\([0-9.]*\)"/\1/p' -e 's|^  base = "https://github.com/pederbe/udpstp/releases/download/v\([0-9.]*\)/.*|\1|p' Formula/udpstp.rb)
             [[ "$previous" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
           fi
           if [[ "$previous" == "$version" ]]; then
@@ -68,6 +68,10 @@ jobs:
             grep -qF "url \"#{base}-$target.tar.gz\"" udpstp.rb
             grep -qF "sha256 \"$checksum\"" udpstp.rb
           done
+          # Keep the released recipe's payloads and checksums. Let Homebrew infer
+          # the version from literal URLs instead of rejecting a redundant stanza.
+          sed -i -e "/^  version \"$version\"$/d" \
+            -e "/^  base = /s/#{version}/$version/g" udpstp.rb
           {
             echo 'changed=true'
             echo "version=$version"
@@ -122,7 +126,7 @@ jobs:
           brew trust pederbe/tap
           formula=$(brew --repository pederbe/tap)/Formula/udpstp.rb
           if [[ -n "$PREVIOUS" ]]; then
-            test "$(sed -n 's/^  version "\([0-9.]*\)"/\1/p' "$formula")" = "$PREVIOUS"
+            test "$(brew info --json=v2 pederbe/tap/udpstp | jq -r '.formulae[0].versions.stable')" = "$PREVIOUS"
             brew install pederbe/tap/udpstp
             test "$(brew list --versions udpstp)" = "udpstp $PREVIOUS"
           fi
@@ -187,7 +191,7 @@ jobs:
           git pull --ff-only origin main
           current=
           if [[ -f Formula/udpstp.rb ]]; then
-            current=$(sed -n 's/^  version "\([0-9.]*\)"/\1/p' Formula/udpstp.rb)
+            current=$(sed -n -e 's/^  version "\([0-9.]*\)"/\1/p' -e 's|^  base = "https://github.com/pederbe/udpstp/releases/download/v\([0-9.]*\)/.*|\1|p' Formula/udpstp.rb)
           fi
           if [[ "$current" == "$VERSION" ]]; then exit 0; fi
           test "$current" = "$PREVIOUS"
