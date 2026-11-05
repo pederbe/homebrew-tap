@@ -1,7 +1,7 @@
 # Maintaining Homebrew installations
 
-This repository tells Homebrew how to install the published Esdieff and
-Fastmash release files. Both programs use the same executables tested by their
+This repository tells Homebrew how to install the published Esdieff,
+Fastmash and udpstp release files. These programs use the same executables tested by their
 release pipelines. This repository does not rebuild them or publish another
 set of release files.
 
@@ -10,6 +10,11 @@ set of release files.
 The `Update` workflow checks Fastmash releases daily at 06:17 UTC. `Update
 Esdieff` checks Esdieff releases at 06:23 UTC. Both also support manual dispatch.
 They use the repository's built-in token.
+
+`Update udpstp` checks its published releases daily at 06:29 UTC and supports
+manual dispatch. It verifies the immutable release's recipe and archive hashes,
+checks installation on Linux and macOS, and runs an authenticated Test before
+updating the recipe. Its installation checks use the published executables.
 
 Fastmash's updater reads its maintained installation recipe from
 [`packaging/homebrew/fastmash.rb`](https://github.com/pederbe/fastmash/blob/main/packaging/homebrew/fastmash.rb),
