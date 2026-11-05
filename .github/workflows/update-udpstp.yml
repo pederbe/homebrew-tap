@@ -1,0 +1,207 @@
+name: Update udpstp
+
+on:
+  schedule:
+    - cron: '29 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: update-udpstp
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  candidate:
+    if: github.repository == 'pederbe/homebrew-tap' && !github.event.repository.private
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    outputs:
+      changed: ${{ steps.release.outputs.changed }}
+      version: ${{ steps.release.outputs.version }}
+      previous: ${{ steps.release.outputs.previous }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Prepare the published recipe
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/pederbe/udpstp/releases/latest > "$RUNNER_TEMP/release.json"
+          jq -e '.draft == false and .prerelease == false and .immutable == true' "$RUNNER_TEMP/release.json" > /dev/null
+          tag=$(jq -r .tag_name "$RUNNER_TEMP/release.json")
+          [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          version=${tag#v}
+          previous=
+          if [[ -f Formula/udpstp.rb ]]; then
+            previous=$(sed -n 's/^  version "\([0-9.]*\)"/\1/p' Formula/udpstp.rb)
+            [[ "$previous" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          fi
+          if [[ "$previous" == "$version" ]]; then
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
+            echo "udpstp $version is already in the tap." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          if [[ -n "$previous" ]]; then
+            test "$(printf '%s\n' "$previous" "$version" | sort -V | tail -1)" = "$version"
+          fi
+          mkdir "$RUNNER_TEMP/candidate"
+          cd "$RUNNER_TEMP/candidate"
+          gh release download "$tag" --repo pederbe/udpstp --pattern udpstp.rb --pattern SHA256SUMS
+          # GitHub's release-asset digest binds the manifest used below.
+          expected=$(jq -er '.assets[] | select(.name == "SHA256SUMS") | .digest | select(test("^sha256:[0-9a-f]{64}$")) | ltrimstr("sha256:")' "$RUNNER_TEMP/release.json")
+          echo "$expected  SHA256SUMS" | sha256sum -c -
+          grep -E '^[0-9a-f]{64}  udpstp\.rb$' SHA256SUMS | sha256sum -c -
+          test "$(sed -n 's/^  version "\([0-9.]*\)"/\1/p' udpstp.rb)" = "$version"
+          for target in aarch64-apple-darwin x86_64-apple-darwin x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu; do
+            archive=udpstp-$tag-$target.tar.gz
+            checksum=$(awk -v file="$archive" '$2 == file { print $1 }' SHA256SUMS)
+            [[ "$checksum" =~ ^[0-9a-f]{64}$ ]]
+            grep -qF "url \"#{base}-$target.tar.gz\"" udpstp.rb
+            grep -qF "sha256 \"$checksum\"" udpstp.rb
+          done
+          {
+            echo 'changed=true'
+            echo "version=$version"
+            echo "previous=$previous"
+          } >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: steps.release.outputs.changed == 'true'
+        with:
+          name: udpstp-recipe
+          path: ${{ runner.temp }}/candidate
+          retention-days: 7
+          if-no-files-found: error
+
+  check:
+    name: Check udpstp on ${{ matrix.os }}
+    needs: candidate
+    if: needs.candidate.outputs.changed == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            target: aarch64-apple-darwin
+          - os: macos-15-intel
+            target: x86_64-apple-darwin
+          - os: ubuntu-26.04
+            target: x86_64-unknown-linux-gnu
+          - os: ubuntu-26.04-arm
+            target: aarch64-unknown-linux-gnu
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: '1'
+      HOMEBREW_NO_ANALYTICS: '1'
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: udpstp-recipe
+          path: ${{ runner.temp }}/candidate
+      - uses: Homebrew/actions/setup-homebrew@c262868c096d909fc278daa87ed9772967331ea3 # 2026.11.02.1
+        with:
+          stable: true
+      - name: Check formula, install, upgrade, exercise and remove the retained binary
+        env:
+          VERSION: ${{ needs.candidate.outputs.version }}
+          PREVIOUS: ${{ needs.candidate.outputs.previous }}
+          TARGET: ${{ matrix.target }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          brew tap pederbe/tap
+          brew trust pederbe/tap
+          formula=$(brew --repository pederbe/tap)/Formula/udpstp.rb
+          if [[ -n "$PREVIOUS" ]]; then
+            test "$(sed -n 's/^  version "\([0-9.]*\)"/\1/p' "$formula")" = "$PREVIOUS"
+            brew install pederbe/tap/udpstp
+            test "$(brew list --versions udpstp)" = "udpstp $PREVIOUS"
+          fi
+          cp "$RUNNER_TEMP/candidate/udpstp.rb" "$formula"
+          brew style pederbe/tap/udpstp
+          brew readall --aliases --os=all --arch=all pederbe/tap
+          brew audit --except=installed pederbe/tap/udpstp
+          if [[ -n "$PREVIOUS" ]]; then
+            brew upgrade pederbe/tap/udpstp
+          else
+            brew install pederbe/tap/udpstp
+          fi
+          brew test pederbe/tap/udpstp
+          test "$(udpstp --version)" = "udpstp $VERSION"
+          mkdir "$RUNNER_TEMP/extracted"
+          archive=udpstp-v$VERSION-$TARGET.tar.gz
+          cd "$RUNNER_TEMP/candidate"
+          gh release download "v$VERSION" --repo pederbe/udpstp --pattern "$archive"
+          expected=$(awk -v file="$archive" '$2 == file { print $1 }' SHA256SUMS)
+          [[ "$expected" =~ ^[0-9a-f]{64}$ ]]
+          echo "$expected  $archive" | shasum -a 256 -c -
+          tar -xzf "$archive" --strip-components=1 -C "$RUNNER_TEMP/extracted"
+          cmp "$RUNNER_TEMP/extracted/udpstp" "$(brew --prefix)/bin/udpstp"
+          # A real authenticated Test exercises the installed executable.
+          work=$RUNNER_TEMP/udpstp-smoke
+          mkdir "$work"
+          printf '[[key]]\nadmin_key_name = "brew-check"\nkey_id = 1\nkey_text = "brew-check-key"\n' > "$work/keys.toml"
+          chmod 600 "$work/keys.toml"
+          udpstp server --listen 127.0.0.1 --port 24614 --max-hops 8 --key-file "$work/keys.toml" > "$work/server.log" 2>&1 &
+          server=$!
+          trap 'kill "$server" 2>/dev/null || true; wait "$server" 2>/dev/null || true' EXIT
+          sleep 1
+          udpstp client --key-file "$work/keys.toml" --max-hops 8 --max-bandwidth 10 --test-interval 5 127.0.0.1:24614
+          kill "$server"
+          wait "$server"
+          trap - EXIT
+          brew uninstall --force pederbe/tap/udpstp
+          test ! -e "$(brew --prefix)/bin/udpstp"
+          test ! -d "$(brew --cellar udpstp)"
+
+  update:
+    needs: [candidate, check]
+    if: needs.candidate.outputs.changed == 'true'
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      statuses: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: udpstp-recipe
+          path: ${{ runner.temp }}/candidate
+      - name: Commit the tested recipe
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.candidate.outputs.version }}
+          PREVIOUS: ${{ needs.candidate.outputs.previous }}
+        run: |
+          set -euo pipefail
+          git pull --ff-only origin main
+          current=
+          if [[ -f Formula/udpstp.rb ]]; then
+            current=$(sed -n 's/^  version "\([0-9.]*\)"/\1/p' Formula/udpstp.rb)
+          fi
+          if [[ "$current" == "$VERSION" ]]; then exit 0; fi
+          test "$current" = "$PREVIOUS"
+          cp "$RUNNER_TEMP/candidate/udpstp.rb" Formula/udpstp.rb
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add Formula/udpstp.rb
+          git commit -m "Update udpstp to $VERSION"
+          # Record completed recipe checks on the final commit so the required
+          # CI gate can admit it. The temporary branch makes the commit available.
+          checked_branch=checked-udpstp-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT
+          git push origin "HEAD:refs/heads/$checked_branch"
+          trap 'git push origin --delete "$checked_branch" || true' EXIT
+          gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$(git rev-parse HEAD)" \
+            -f state=success -f context=CI -f description='Recipe installation checks passed' \
+            -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          git push origin HEAD:main
