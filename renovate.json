@@ -24,7 +24,7 @@
   "dependencyDashboard": false,
   "automerge": true,
   "automergeType": "pr",
-  "platformAutomerge": false,
+  "platformAutomerge": true,
   "rebaseWhen": "behind-base-branch",
   "ignoreTests": false,
   "timezone": "Europe/Berlin",
