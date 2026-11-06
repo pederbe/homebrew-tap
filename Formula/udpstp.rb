@@ -8,27 +8,27 @@ class Udpstp < Formula
   homepage "https://udpstp.com"
   license any_of: ["MIT", "Apache-2.0"]
 
-  base = "https://github.com/pederbe/udpstp/releases/download/v0.1.1/udpstp-v0.1.1"
+  base = "https://github.com/pederbe/udpstp/releases/download/v0.1.2/udpstp-v0.1.2"
 
   on_macos do
     on_arm do
       url "#{base}-aarch64-apple-darwin.tar.gz"
-      sha256 "6a4fddd088cb8e63fd992015c63de02189686c759f6b46e1f6ca94d041d7052f"
+      sha256 "dfd1f8b813bb762a59fe225a23712b80d31fd9bd3cc4fd180246387836b5a81c"
     end
     on_intel do
       url "#{base}-x86_64-apple-darwin.tar.gz"
-      sha256 "ed9c1227db2e11ea1880c78ce34b37d108d2d5a71a0308fd6d460e2e2df05641"
+      sha256 "bea3a90e8b6179cceeb46202bad65d9fd20da5d380c07ca8203124d40d7050bb"
     end
   end
 
   on_linux do
     on_arm do
       url "#{base}-aarch64-unknown-linux-gnu.tar.gz"
-      sha256 "573dcacf39fd02382435e27b022559cb343f333229a3ad5c9829081683b65d64"
+      sha256 "48816447ac6c6469a83837b243b50dfd0a42f9328b324c8cb2bd0098351f617f"
     end
     on_intel do
       url "#{base}-x86_64-unknown-linux-gnu.tar.gz"
-      sha256 "d7def7cadacdbd593dafaf366e6c365eca412c0199d084727504ac0e37aee744"
+      sha256 "5d1de52dbc4af0b686f842e157e95ef7dd737dc480467baf2ccaf3bb0a1472c0"
     end
   end
 
