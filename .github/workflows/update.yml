@@ -58,7 +58,13 @@ jobs:
           # The one-time 0.4.0 revision migrates existing Homebrew builds.
           # A different application version starts again at revision zero.
           if [[ "$version" != "$template_version" ]]; then sed -i '/^  revision [0-9]/d' "$formula"; fi
-          for target in aarch64-apple-darwin x86_64-unknown-linux-gnu; do
+          linux_target=x86_64-unknown-linux-gnu
+          if jq -e --arg name "fastmash-$tag-x86_64-unknown-linux-musl.tar.gz" \
+            '.assets | any(.name == $name)' "$RUNNER_TEMP/release.json" >/dev/null; then
+            linux_target=x86_64-unknown-linux-musl
+          fi
+          sed -i -E "s/x86_64-unknown-linux-(gnu|musl)/$linux_target/g" "$formula"
+          for target in aarch64-apple-darwin "$linux_target"; do
             name=fastmash-$tag-$target.tar.gz
             digest=$(jq -er --arg name "$name" '.assets[] | select(.name == $name) | .digest | select(test("^sha256:[0-9a-f]{64}$")) | ltrimstr("sha256:")' "$RUNNER_TEMP/release.json")
             url=https://github.com/pederbe/fastmash/releases/download/$tag/$name

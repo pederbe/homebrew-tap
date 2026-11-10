@@ -21,6 +21,9 @@ Fastmash's updater reads its maintained installation recipe from
 then selects the latest published archives and their SHA-256 hashes. Esdieff
 supplies a complete recipe with each release.
 
+Fastmash's updater selects the static musl Linux archive when the release
+provides one, and keeps GNU archives working for older releases.
+
 The workflows check installation, upgrade and removal before updating the
 recipe on `main`. Fastmash also compares the installed executable with the
 release archive. Application correctness is established by the original
