@@ -37,6 +37,29 @@ of the default `main` recipe. A new version resets the recipe revision to zero.
 The 0.4.0 recipe uses revision 1 so existing users migrate from the previous
 Homebrew-built package through `brew upgrade`.
 
+## Public issues and pull requests
+
+Issue descriptions use **Problem**, **Desired outcome** and **Evidence**.
+Describe the task and its impact, the result that would resolve it, and available
+reproduction details or examples. Incomplete observations are welcome.
+Pull requests use **Problem**, **Solution** and **Validation**. Explain the
+reason for the change, its behavior and compatibility effects, and meaningful
+checks. Put migration or upgrade instructions in Solution. Keep small changes
+brief and links and examples within these sections.
+
+Public descriptions and comments cover software behavior, technical rationale
+and evidence. Keep private discussions, authorization exchanges, personal
+decision history and handoffs out of them. State technical outcomes directly
+and attribute checks accurately. Comments are for technical questions, findings
+and review discussion.
+
+Edit descriptions only to keep technical facts, scope, evidence and acceptance
+criteria accurate within the work at hand. Preserve the reporter's observations
+and human-written wording unless a rewrite is requested. Leave merged PR
+descriptions alone unless a correction is requested. Track progress with
+checklists, linked issues and labels. These rules also apply to API updates.
+Check these limits before posting or editing.
+
 ## Recipe changes
 
 Change Fastmash's recipe and shared installation check in its own repository

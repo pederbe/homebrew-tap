@@ -1,0 +1,26 @@
+name: Feature request
+description: Suggest an improvement to Homebrew delivery.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: |
+        What are you trying to install or maintain, and what gets in the way?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: |
+        What would a useful result look like? You do not need to design the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: |
+        Examples, current workarounds or relevant links, if available.
