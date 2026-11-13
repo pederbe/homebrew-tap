@@ -1,78 +1,43 @@
-# Maintaining Homebrew installations
+# Contributing to the Homebrew tap
 
-This repository tells Homebrew how to install the published Esdieff,
-Fastmash and udpstp release files. These programs use the same executables tested by their
-release pipelines. This repository does not rebuild them or publish another
-set of release files.
-
-## Automatic updates
-
-The `Update` workflow checks Fastmash releases daily at 06:17 UTC. `Update
-Esdieff` checks Esdieff releases at 06:23 UTC. Both also support manual dispatch.
-They use the repository's built-in token.
-
-`Update udpstp` checks its published releases daily at 06:29 UTC and supports
-manual dispatch. It verifies the immutable release's recipe and archive hashes,
-checks installation on Linux and macOS, and runs an authenticated Test before
-updating the recipe. Its installation checks use the published executables.
-
-Fastmash's updater reads its maintained installation recipe from
-[`packaging/homebrew/fastmash.rb`](https://github.com/pederbe/fastmash/blob/main/packaging/homebrew/fastmash.rb),
-then selects the latest published archives and their SHA-256 hashes. Esdieff
-supplies a complete recipe with each release.
-
-Fastmash's updater selects the static musl Linux archive when the release
-provides one, and keeps GNU archives working for older releases.
-
-The workflows check installation, upgrade and removal before updating the
-recipe on `main`. Fastmash also compares the installed executable with the
-release archive. Application correctness is established by the original
-release tests rather than another build here. A failure leaves the previous
-recipe in place. Retry the workflow after repairing the cause. The program's
-release and its other installation channels remain available.
-
-Fastmash's `check_only` input runs preparation and installation checks without
-changing `main`. Its optional `recipe_ref` input selects a Fastmash ref instead
-of the default `main` recipe. A new version resets the recipe revision to zero.
-The 0.4.0 recipe uses revision 1 so existing users migrate from the previous
-Homebrew-built package through `brew upgrade`.
-
-## Public issues and pull requests
-
-Issue descriptions use **Problem**, **Desired outcome** and **Evidence**.
-Describe the task and its impact, the result that would resolve it, and available
-reproduction details or examples. Incomplete observations are welcome.
-Pull requests use **Problem**, **Solution** and **Validation**. Explain the
-reason for the change, its behavior and compatibility effects, and meaningful
-checks. Put migration or upgrade instructions in Solution. Keep small changes
-brief and links and examples within these sections.
-
-Public descriptions and comments cover software behavior, technical rationale
-and evidence. Keep private discussions, authorization exchanges, personal
-decision history and handoffs out of them. State technical outcomes directly
-and attribute checks accurately. Comments are for technical questions, findings
-and review discussion.
-
-Edit descriptions only to keep technical facts, scope, evidence and acceptance
-criteria accurate within the work at hand. Preserve the reporter's observations
-and human-written wording unless a rewrite is requested. Leave merged PR
-descriptions alone unless a correction is requested. Track progress with
-checklists, linked issues and labels. These rules also apply to API updates.
-Check these limits before posting or editing.
+This tap installs the published Esdieff, Fastmash and udpstp executables.
+Recipe changes must preserve the released binaries and their checksums.
+Report application bugs in the upstream project's tracker and recipe or
+installation problems here.
 
 ## Recipe changes
 
-Change Fastmash's recipe and shared installation check in its own repository
-first. Change Esdieff's recipe generator in its own repository. Submit the
-resulting recipe changes here through a pull request. The `Formula` workflow
-checks style, supported platform loading and installation on macOS 15, macOS
-26 and Linux. It checks upgrades when the Fastmash recipe changes.
+Change the recipe at its source before submitting the resulting change here.
 
-Ordinary pull request merging completes the update. No separate package
-publication workflow or release credentials are needed. Keep historical
-package releases available for users who have not upgraded yet.
-Merging an already checked change does not start another installation check.
+- [Fastmash's recipe and installation check](https://github.com/pederbe/fastmash/tree/main/packaging/homebrew).
+- [Esdieff's release tooling](https://github.com/pederbe/esdieff/tree/main/tools/release).
+- [udpstp's recipe template and renderer](https://github.com/pederbe/udpstp/tree/main/contrib/homebrew).
 
-GitHub pauses scheduled workflows after 60 days without repository activity
-and emails the owner first. If an updater is paused, enable it in the Actions
-tab and dispatch it once.
+Open a focused pull request and describe the installation behavior and any
+upgrade consequences. The [Formula workflow](.github/workflows/formula.yml)
+checks style, supported platform loading and installation. Fastmash recipe
+changes also exercise upgrades. Let the required checks pass before merging.
+A recipe pull request does not need a separate package upload.
+
+## Public issues and pull requests
+
+Use the issue template's **Problem**, **Desired outcome** and **Evidence**
+sections. Include the command, operating system, observed result and relevant
+error output. Pull requests use **Problem**, **Solution** and **Validation**.
+Explain compatibility effects and upgrade steps in Solution.
+
+Keep discussion focused on technical facts and evidence. Remove private data,
+attribute checks accurately and preserve other people's observations and wording
+when updating a report.
+
+## Checking updater changes
+
+The updater workflows own release selection and their current inputs.
+Fastmash's [updater](.github/workflows/update.yml) has a check-only mode for
+preparing and checking a recipe without changing the tap. Esdieff and udpstp
+have [dedicated](.github/workflows/update-esdieff.yml)
+[updaters](.github/workflows/update-udpstp.yml) for their published recipes.
+
+Preserve installation, upgrade and removal checks. A failed update must leave
+the previous recipe available. Keep historical release files available for
+existing installations. Inspect the failed workflow's output before retrying.
