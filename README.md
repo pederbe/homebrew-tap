@@ -1,55 +1,52 @@
 # Peder Bergan's Homebrew tap
 
+Install the published release executables of Fastmash, Esdieff and udpstp
+on Linux and macOS. Homebrew installs the release files and licenses without
+compiling the programs or requiring Rust. Each formula defines its supported
+platforms.
+
 ## Fastmash
 
-Install [Fastmash](https://fastmash.io), a command-line tool for statistics
-and table transformations, on Linux x86-64 or Apple Silicon macOS 15 and later:
+[Fastmash](https://fastmash.io) provides command-line statistics and table
+transformations.
 
 ```sh
 brew install pederbe/tap/fastmash
 ```
 
-Homebrew installs a prebuilt bottle on macOS 15, macOS 26 and Linux x86-64,
-without needing Rust. Otherwise it builds the published source with its locked
-Rust dependencies. Use `--build-from-source` to request a source build.
-The formula installs `fastmash`, both project licenses, and the dependency
-licenses and notices. Linux installations also include `fastmash-sort-supervisor`.
-Rust is a build dependency only. Homebrew builds do not carry the
-performance qualification of the project's downloadable binaries.
-
-New Fastmash releases usually reach this tap within a day. To update, check or
-remove the installation:
-
-```sh
-brew upgrade fastmash
-brew test pederbe/tap/fastmash
-brew uninstall pederbe/tap/fastmash
-```
-
-On Linux, the package test exercises the optional system-sort route and requires
-Linux 5.11 or later and coreutils at `/usr/bin/sort`. Older kernels can
-use Fastmash's built-in sorting. On macOS, it checks the built-in sorter and
-confirms that no Sort supervisor is installed.
-
-Report formula problems in this repository. Report program problems in
-the [Fastmash issue tracker](https://github.com/pederbe/fastmash/issues).
-
-See [the maintenance guide](CONTRIBUTING.md) for source checks and bottle publication.
-
 ## Esdieff
 
-Install [Esdieff](https://esdieff.com), a toolkit for understanding, checking and
-testing SDF device models, on macOS 15+ or Linux:
+[Esdieff](https://esdieff.com) helps you understand, check and test SDF device
+models.
 
 ```sh
 brew install pederbe/tap/esdieff
 ```
 
-The formula installs the prebuilt release and its licenses. New releases usually
-reach this tap within a day. Update with `brew upgrade esdieff`, check it with
-`brew test pederbe/tap/esdieff`, and remove it with `brew uninstall esdieff`.
+## udpstp
 
-Report program problems in the [Esdieff issue tracker](https://github.com/pederbe/esdieff/issues).
+[udpstp](https://udpstp.com) measures network-path capacity, loss and delay
+using authenticated tests.
+
+```sh
+brew install pederbe/tap/udpstp
+```
+
+## Update, check or remove
+
+Replace `fastmash` with the program you installed.
+
+```sh
+brew upgrade fastmash
+brew test pederbe/tap/fastmash
+brew uninstall fastmash
+```
+
+Report recipe and installation problems in this repository. Report application
+bugs in the [Fastmash](https://github.com/pederbe/fastmash/issues),
+[Esdieff](https://github.com/pederbe/esdieff/issues) or
+[udpstp](https://github.com/pederbe/udpstp/issues) tracker.
+See [Contributing](CONTRIBUTING.md) for recipe changes and checks.
 
 The formulae and documentation are available under either the MIT or
-Apache-2.0 license. Both programs and their dependencies retain their own licenses.
+Apache-2.0 license. The programs and their dependencies retain their own licenses.
