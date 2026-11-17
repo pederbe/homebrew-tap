@@ -1,8 +1,8 @@
 class Esdieff < Formula
   desc "SDF toolkit for connected-device models"
   homepage "https://esdieff.com"
-  url "https://github.com/pederbe/esdieff/releases/download/v0.4.0/esdieff-aarch64-apple-darwin.tar.xz"
-  sha256 "07996456a702a629ade54f40df3362025367fd0b07ebd82a66b18591574bbe00"
+  url "https://github.com/pederbe/esdieff/releases/download/v0.5.0/esdieff-aarch64-apple-darwin.tar.xz"
+  sha256 "8289ce8432cc842ae55fb27c77d580e6396529f8a79b01d352008128fc8ca9a1"
   license any_of: ["MIT", "Apache-2.0"]
 
   on_macos do
@@ -12,12 +12,12 @@ class Esdieff < Formula
 
   on_linux do
     on_intel do
-      url "https://github.com/pederbe/esdieff/releases/download/v0.4.0/esdieff-x86_64-unknown-linux-gnu.tar.xz"
-      sha256 "9833344de24e7d5f5d03654796915876feb3338f986af23d444f2e7efeb1ced6"
+      url "https://github.com/pederbe/esdieff/releases/download/v0.5.0/esdieff-x86_64-unknown-linux-gnu.tar.xz"
+      sha256 "cab653b77af6bf87425e8a24045000c9983722d6df8ab81a0e8ede97a5d65d26"
     end
     on_arm do
-      url "https://github.com/pederbe/esdieff/releases/download/v0.4.0/esdieff-aarch64-unknown-linux-gnu.tar.xz"
-      sha256 "1e1fb143085321312761dcd40413bf00d6af2c8a0d739d3f5150482a2e9364cc"
+      url "https://github.com/pederbe/esdieff/releases/download/v0.5.0/esdieff-aarch64-unknown-linux-gnu.tar.xz"
+      sha256 "5e91ce8dd9ff2e63834c4fa80f03d476ac11eb0240acd40c1c6fa3837b189239"
     end
   end
 
