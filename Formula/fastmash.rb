@@ -1,8 +1,8 @@
 class Fastmash < Formula
   desc "Fast command-line statistics and table transformations"
   homepage "https://fastmash.io"
-  url "https://github.com/pederbe/fastmash/releases/download/v0.7.1/fastmash-v0.7.1-aarch64-apple-darwin.tar.gz"
-  sha256 "38766bb8d9605a8d0bb202118c1d777ff03f23e753924f4295f38abce630d59f"
+  url "https://github.com/pederbe/fastmash/releases/download/v0.7.2/fastmash-v0.7.2-aarch64-apple-darwin.tar.gz"
+  sha256 "f24b57b31837e234949d6dfbd1fe722623f2ea0a3d92b0d19286191f3b54b45c"
   license any_of: ["MIT", "Apache-2.0"]
 
   on_macos do
@@ -13,8 +13,8 @@ class Fastmash < Formula
   on_linux do
     depends_on arch: :x86_64
     on_intel do
-      url "https://github.com/pederbe/fastmash/releases/download/v0.7.1/fastmash-v0.7.1-x86_64-unknown-linux-musl.tar.gz"
-      sha256 "4d14da3f9e9d30f47b1c4012e6a842230c6437044987d2ff0d020c36c5296ee7"
+      url "https://github.com/pederbe/fastmash/releases/download/v0.7.2/fastmash-v0.7.2-x86_64-unknown-linux-musl.tar.gz"
+      sha256 "ebdc9c1a5e78d7ade29d109dedc16f819627092d8f57ef40b86cc6f8639b195d"
     end
   end
 
