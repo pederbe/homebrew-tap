@@ -99,7 +99,7 @@ jobs:
         with:
           name: esdieff-recipe
           path: ${{ runner.temp }}/candidate
-      - uses: Homebrew/actions/setup-homebrew@75064b260aea50a4b3dd1352975747d5576aaf05 # main
+      - uses: Homebrew/actions/setup-homebrew@9adaf5f919d8bcadd00012733acf8d50319d25e3 # main
         with:
           stable: true
       - name: Check formula, install, upgrade, exercise and remove the retained binary
